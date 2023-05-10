@@ -17,4 +17,5 @@ Install git, go to home directory, and clone this repo
     
 Install latest python and all packages and activate virtual environment
     
+    cd past-precipitation
     sh prepare_env.sh
