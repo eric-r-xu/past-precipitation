@@ -29,8 +29,6 @@ app.config.update(
 
 email_service = Mail(app)
 
-adhoc_backfill = False
-
 
 def timetz(*args):
     return datetime.datetime.now(tz).timetuple()
@@ -64,8 +62,8 @@ def runQuery(mysql_conn, query):
             cursor.execute(query)
 
 
-def rain_api_service_backfill(
-    mysql_conn, lat_lon_dict, dt_start, dt_end, location_name_filter
+def rain_api_service_history_1h_ago(
+    mysql_conn, lat_lon_dict, location_name_filter
 ):
     api_key = OPENWEATHERMAP_AUTH["api_key"]
     for location_name in [each for each in lat_lon_dict.keys()]:
@@ -75,53 +73,51 @@ def rain_api_service_backfill(
                 lat_lon_dict[location_name]["lat"],
                 lat_lon_dict[location_name]["lon"],
             )
-            # 1 hour increments between ds_start and ds_end
-            for dt in range(dt_start, dt_end, 3600):
-                # https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=37.493&lon=-122.173&dt=1683341200&appid=a4b3d4b6c2fb1eee3b2b42d41d264c9b
-                api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt}&appid={api_key}"
-                r = requests.get(api_link)
-                logging.info(f"finished getting {api_link} data")
-                requested_dt = int(time.time())
-                api_result_obj = r.json()
-                rain_1h, rain_3h, dt = 0, 0, api_result_obj['data'][0]['dt']
-                try:
-                    rain_1h = api_result_obj['data'][0]['rain']['1h']
-                except:
-                    pass
-                try:
-                    rain_3h = api_result_obj['data'][0]['rain']['3h']
-                except:
-                    pass
+            requested_dt = int(time.time()) - 3600
+            # https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=37.493&lon=-122.173&dt=1683341200&appid=a4b3d4b6c2fb1eee3b2b42d41d264c9b
+            api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt}&appid={api_key}"
+            r = requests.get(api_link)
+            logging.info(f"finished getting {api_link} data")
+            api_result_obj = r.json()
+            rain_1h, rain_3h, dt = 0, 0, api_result_obj['data'][0]['dt']
+            try:
+                rain_1h = api_result_obj['data'][0]['rain']['1h']
+            except:
+                pass
+            try:
+                rain_3h = api_result_obj['data'][0]['rain']['3h']
+            except:
+                pass
 
-                query = (
-                    "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
-                    % (
-                        dt,
-                        requested_dt,
-                        location_name,
-                        lat,
-                        lon,
-                        rain_1h,
-                        rain_3h,
-                    )
+            query = (
+                "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
+                % (
+                    dt,
+                    requested_dt,
+                    location_name,
+                    lat,
+                    lon,
+                    rain_1h,
+                    rain_3h,
                 )
-                logging.info("query=%s" % (query))
-                runQuery(mysql_conn, query)
-                logging.info(
-                    "%s - %s - %s - %s - %s - %s - %s"
-                    % (
-                        dt,
-                        requested_dt,
-                        location_name,
-                        lat,
-                        lon,
-                        rain_1h,
-                        rain_3h,
-                    )
-                )
-            return logging.info(
-                "finished calling weather api and updating mysql for backfill"
             )
+            logging.info("query=%s" % (query))
+            runQuery(mysql_conn, query)
+            logging.info(
+                "%s - %s - %s - %s - %s - %s - %s"
+                % (
+                    dt,
+                    requested_dt,
+                    location_name,
+                    lat,
+                    lon,
+                    rain_1h,
+                    rain_3h,
+                )
+            )
+        return logging.info(
+            "finished calling weather api history"
+        )
 
 
 def rain_api_service(mysql_conn, lat_lon_dict):
@@ -176,10 +172,10 @@ def rain_api_service(mysql_conn, lat_lon_dict):
     return logging.info("finished calling weather api and updating mysql")
 
 
-if adhoc_backfill == True:
-    rain_api_service_backfill(
-        mysql_conn, lat_lon_dict, 1683241200, 1683457862, "Bedwell Bayfront Park"
-    )
+# rain 3.0 historical api service (backfill Bedwell Bayfront Park only for 1 hour ago)
+rain_api_service_history_1h_ago(
+    mysql_conn, lat_lon_dict, "Bedwell Bayfront Park"
+)
 
-# rain api service
+# rain 2.5 api service
 rain_api_service(mysql_conn, lat_lon_dict)
