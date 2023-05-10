@@ -75,6 +75,7 @@ def rain_api_service_backfill(
                 lat_lon_dict[location_name]["lat"],
                 lat_lon_dict[location_name]["lon"],
             )
+            # 1 hour increments between ds_start and ds_end
             for dt in range(dt_start, dt_end, 3600):
                 # https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=37.493&lon=-122.173&dt=1683341200&appid=a4b3d4b6c2fb1eee3b2b42d41d264c9b
                 api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt}&appid={api_key}"
@@ -82,13 +83,13 @@ def rain_api_service_backfill(
                 logging.info(f"finished getting {api_link} data")
                 requested_dt = int(time.time())
                 api_result_obj = r.json()
-                rain_1h, rain_3h, dt = 0, 0, api_result_obj["dt"]
+                rain_1h, rain_3h, dt = 0, 0, api_result_obj['data'][0]['dt']
                 try:
-                    rain_1h = api_result_obj["rain"]["1h"]
+                    rain_1h = api_result_obj['data'][0]['rain']['1h']
                 except:
                     pass
                 try:
-                    rain_3h = api_result_obj["rain"]["3h"]
+                    rain_3h = api_result_obj['data'][0]['rain']['3h']
                 except:
                     pass
 
