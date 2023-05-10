@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Past Precipitation</title>
+<style>
+body {
+  font-family: Verdana,Arial,sans-serif;
+  width: 1800px;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 2px;
+}
+h1 {
+  font-size: 1.2em;
+}
+h2 {
+  font-size: 0.2em;
+}
+.block {
+  display: block;
+  width: 7%;
+  border: 0.4px solid black;
+  background-color: #4CAF50;
+  padding: 7px 14px;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<h1>Past Precipitation</h1>
+<form action="./rain" method="POST">
+Location Name: <br>
+<input list="location_name" placeholder="Which location name? Choose from list." name="i_location_name" style="width: 300px;">
+<datalist id="location_name">
+{% for location_name in location_names %}
+<option value="{{location_name}}" >
+{% endfor %}
+</datalist>
+<br>
+<br>
+<br><button type="submit" class="block" name="i_button">Click for Latest Past Precipitation</button>
+<img src="/static/past_rain.jpeg" alt="Rain"> 
+</form>
+</body>
+</html>
