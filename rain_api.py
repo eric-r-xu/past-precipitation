@@ -71,7 +71,7 @@ def rain_api_service_history_1h_ago(mysql_conn, lat_lon_dict, location_name_filt
                 lat_lon_dict[location_name]["lat"],
                 lat_lon_dict[location_name]["lon"],
             )
-            requested_dt = int(time.time()) - 3600
+            dt = int(time.time()) - 3600
             # https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=37.493&lon=-122.173&dt=1683341200&appid=a4b3d4b6c2fb1eee3b2b42d41d264c9b
             api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt}&appid={api_key}"
             r = requests.get(api_link)
