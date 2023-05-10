@@ -62,9 +62,7 @@ def runQuery(mysql_conn, query):
             cursor.execute(query)
 
 
-def rain_api_service_history_1h_ago(
-    mysql_conn, lat_lon_dict, location_name_filter
-):
+def rain_api_service_history_1h_ago(mysql_conn, lat_lon_dict, location_name_filter):
     api_key = OPENWEATHERMAP_AUTH["api_key"]
     for location_name in [each for each in lat_lon_dict.keys()]:
         if location_name == location_name_filter:
@@ -115,9 +113,6 @@ def rain_api_service_history_1h_ago(
                     rain_3h,
                 )
             )
-        return logging.info(
-            "finished calling weather api history"
-        )
 
 
 def rain_api_service(mysql_conn, lat_lon_dict):
@@ -172,10 +167,10 @@ def rain_api_service(mysql_conn, lat_lon_dict):
     return logging.info("finished calling weather api and updating mysql")
 
 
+logging.info('calling v3.0 weather api')
 # rain 3.0 historical api service (backfill Bedwell Bayfront Park only for 1 hour ago)
-rain_api_service_history_1h_ago(
-    mysql_conn, lat_lon_dict, "Bedwell Bayfront Park"
-)
+rain_api_service_history_1h_ago(mysql_conn, lat_lon_dict, "Bedwell Bayfront Park")
 
+logging.info('calling v2.5 weather api')
 # rain 2.5 api service
 rain_api_service(mysql_conn, lat_lon_dict)
