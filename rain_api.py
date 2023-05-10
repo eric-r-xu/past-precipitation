@@ -29,7 +29,7 @@ app.config.update(
 
 email_service = Mail(app)
 
-adhoc_backfill = True
+adhoc_backfill = False
 
 
 def timetz(*args):
