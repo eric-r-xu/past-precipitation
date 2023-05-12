@@ -1,33 +1,28 @@
-from flask import Flask
-from flask_mail import Mail, Message
+###### PACKAGES ######
 import pandas as pd
 import logging
-import requests
-import time
-from local_settings import *
-import datetime
-import gc
-import pymysql
-import pytz
 import warnings
+import pymysql
+from flask_sqlalchemy import SQLAlchemy
+from pytz import timezone
+import pytz
+import time
+import dateutil.parser
+import flask
+import datetime
+from functools import wraps
+from flask import Flask, request, Response, render_template
+import numpy as np
+import math
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import initialize_mysql_rain
-from initialize_mysql_rain import lat_lon_dict
+from flask_mysqldb import MySQL
+from local_settings import *
+import initialize_mysql_rain
+from initialize_mysql_rain import location_names, lat_lon_dict
 
-app = Flask(__name__)
-
-app.config.update(
-    dict(
-        DEBUG=True,
-        MAIL_SERVER="smtp.gmail.com",
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
-        MAIL_USE_SSL=False,
-        MAIL_USERNAME=GMAIL_AUTH["mail_username"],
-        MAIL_PASSWORD=GMAIL_AUTH["mail_password"],
-    )
-)
-
-email_service = Mail(app)
+##########################
 
 
 def timetz(*args):
@@ -35,143 +30,94 @@ def timetz(*args):
 
 
 # logging datetime in PST
-tz = pytz.timezone("US/Pacific")
+tz = timezone("US/Pacific")
 logging.Formatter.converter = timetz
 
 logging.basicConfig(
-    filename="/logs/rain_api.log",
+    filename="/logs/rain_service.log",
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.INFO,
     datefmt=f"%Y-%m-%d %H:%M:%S ({tz})",
 )
 
+app = Flask(__name__)
 
-# connect to sql
-def getSQLConn(host, user, password):
-    return pymysql.connect(host=host, user=user, passwd=password, autocommit=True)
+limiter = Limiter(app, default_limits=["500 per day", "50 per hour"])
 
-
-mysql_conn = getSQLConn(MYSQL_AUTH["host"], MYSQL_AUTH["user"], MYSQL_AUTH["password"])
-
-
-# run query
-def runQuery(mysql_conn, query):
-    with mysql_conn.cursor() as cursor:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            cursor.execute(query)
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqldb://%s:%s@%s/%s" % (
+    MYSQL_AUTH["user"],
+    MYSQL_AUTH["password"],
+    MYSQL_AUTH["host"],
+    "rain",
+)
+db = SQLAlchemy(app)
 
 
-def rain_api_service_history_1h_ago(mysql_conn, lat_lon_dict, location_name_filter):
-    api_key = OPENWEATHERMAP_AUTH["api_key"]
-    for location_name in [each for each in lat_lon_dict.keys()]:
-        if location_name == location_name_filter:
-            logging.info(f"starting api call for {location_name}")
-            lat, lon = (
-                lat_lon_dict[location_name]["lat"],
-                lat_lon_dict[location_name]["lon"],
-            )
-            requested_dt = int(time.time())
-            dt_input = requested_dt - 3600
-            api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt_input}&appid={api_key}"
-            r = requests.get(api_link)
-            logging.info(f"finished getting {api_link} data")
-            api_result_obj = r.json()
-            rain_1h, rain_3h, dt = 0, 0, api_result_obj['data'][0]['dt']
-            logging.info(f'dt_input = {dt_input}, dt_actual = {dt}')
-            try:
-                rain_1h = api_result_obj['data'][0]['rain']['1h']
-            except:
-                pass
-            try:
-                rain_3h = api_result_obj['data'][0]['rain']['3h']
-            except:
-                pass
-
-            query = (
-                "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
-                % (
-                    dt,
-                    requested_dt,
-                    location_name,
-                    lat,
-                    lon,
-                    rain_1h,
-                    rain_3h,
-                )
-            )
-            logging.info("query=%s" % (query))
-            runQuery(mysql_conn, query)
-            logging.info(
-                "%s - %s - %s - %s - %s - %s - %s"
-                % (
-                    dt,
-                    requested_dt,
-                    location_name,
-                    lat,
-                    lon,
-                    rain_1h,
-                    rain_3h,
-                )
-            )
+@app.route("/rain")
+def rain_home_html():
+    return render_template("rain_service.html", location_names=location_names)
 
 
-def rain_api_service(mysql_conn, lat_lon_dict):
-    api_key = OPENWEATHERMAP_AUTH["api_key"]
-    for location_name in [each for each in lat_lon_dict.keys()]:
-        logging.info(f"starting api call for {location_name}")
-        lat, lon = (
-            lat_lon_dict[location_name]["lat"],
-            lat_lon_dict[location_name]["lon"],
+@app.route("/rain", methods=(["POST"]))
+def rain_gen_html_table():
+    i_location_name = str(request.form["i_location_name"])
+    i_location_lat, i_location_lon = (
+        lat_lon_dict[i_location_name]["lat"],
+        lat_lon_dict[i_location_name]["lon"],
+    )
+    try:
+        conn = db.engine.connect()
+        df_pre = pd.read_sql_query(
+            f"""
+            SELECT  
+                MIN(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "First API Update Hour (PST)",
+                MAX(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "Last API Update Hour (PST)",
+                MAX(CONVERT_TZ(FROM_UNIXTIME(requested_dt),'UTC','US/Pacific')) AS "Last API Request Time (PST)"
+            FROM 
+                rain.tblFactLatLon 
+            WHERE 
+                location_name = "{i_location_name}" 
+                AND lat = {i_location_lat} 
+                AND lon = {i_location_lon}
+            """,
+            conn,
         )
-        api_link = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}"
-        r = requests.get(api_link)
-        logging.info(f"finished getting {api_link} data")
-        requested_dt = int(time.time())
-        api_result_obj = r.json()
-        rain_1h, rain_3h, dt = 0, 0, api_result_obj["dt"]
-        try:
-            rain_1h = api_result_obj["rain"]["1h"]
-        except:
-            pass
-        try:
-            rain_3h = api_result_obj["rain"]["3h"]
-        except:
-            pass
-
-        query = (
-            "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
-            % (
-                dt,
-                requested_dt,
-                location_name,
-                lat,
-                lon,
-                rain_1h,
-                rain_3h,
-            )
+        df = pd.read_sql_query(
+            f"""
+        SELECT  
+            location_name AS "Location Name",
+            {i_location_lat} AS "Latitude",
+            {i_location_lon} AS "Longitude",
+            SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13) AS "API Update Hour (PST)",
+            MAX(CONVERT_TZ(FROM_UNIXTIME(requested_dt),'UTC','US/Pacific')) AS "API Request Time (PST)",
+            MAX(rain_1h) AS "Rainfall (mm) Last 1 hour",
+            MAX(rain_3h) AS "Rainfall (mm) Last 3 hours"
+        FROM 
+            rain.tblFactLatLon 
+        WHERE 
+            location_name = "{i_location_name}" 
+            AND lat = {i_location_lat} 
+            AND lon = {i_location_lon} 
+            AND (rain_1h > 0 OR rain_3h > 0)
+        GROUP BY 
+            4
+        ORDER BY 
+            4 DESC,
+            5 DESC
+        """,
+            conn,
         )
-        logging.info("query=%s" % (query))
-        runQuery(mysql_conn, query)
-        logging.info(
-            "%s - %s - %s - %s - %s - %s - %s"
-            % (
-                dt,
-                requested_dt,
-                location_name,
-                lat,
-                lon,
-                rain_1h,
-                rain_3h,
-            )
-        )
-    return logging.info("finished calling weather api and updating mysql")
+    finally:
+        conn.close()
+    return render_template(
+        "rain_service_result.html",
+        tables=[df_pre.to_html(classes="data"), df.to_html(classes="data")],
+        titles=np.concatenate([df_pre.columns.values, df.columns.values]),
+    )
 
 
-logging.info('calling v3.0 weather api')
-# rain 3.0 historical api service (backfill Bedwell Bayfront Park only for 1 hour ago)
-rain_api_service_history_1h_ago(mysql_conn, lat_lon_dict, "Bedwell Bayfront Park")
+# --------- RUN WEB APP SERVER ------------#
 
-logging.info('calling v2.5 weather api')
-# rain 2.5 api service
-rain_api_service(mysql_conn, lat_lon_dict)
+# Start the app server on port 1080
+app.debug = True
+app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
