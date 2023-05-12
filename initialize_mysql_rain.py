@@ -14,7 +14,10 @@ lat_lon_dict = {
     "Urbana, Illinois": {"lat": 40.113, "lon": -88.211},
     "Lake Quannapowitt": {"lat": 42.514, "lon": -71.078},
     "Death Valley, CA": {"lat": 36.505, "lon": -117.079},
+    "Mount Diablo State Park": {"lat": 37.882, "lon": -121.914},
+    "Yosemite National Park": {"lat": 37.865, "lon": -119.538},
 }
+
 
 location_names = [x for x in lat_lon_dict.keys()]
 
