@@ -12,7 +12,7 @@ import argparse
 import initialize_mysql_rain
 
 
-def main(start_input, end_input, location_input, lat_lon_dict):
+def main(start_input, end_input, location_input):
     def timetz(*args):
         return datetime.datetime.now(tz).timetuple()
 
@@ -182,6 +182,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.start_input, args.end_input, args.location_input, lat_lon_dict)
+    main(args.start_input, args.end_input, args.location_input)
 
     logging.info("Ended successfully")
