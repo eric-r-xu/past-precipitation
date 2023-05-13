@@ -26,3 +26,4 @@ urllib3
 py3-validate-email
 pytemperature
 redis[hiredis]
+flask_sqlalchemy
