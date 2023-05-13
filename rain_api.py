@@ -12,7 +12,7 @@ import argparse
 import initialize_mysql_rain
 
 
-def main(start_input, end_input, location_input):
+def main(start_input, end_input, location_input, api_call_limit):
     def timetz(*args):
         return datetime.datetime.now(tz).timetuple()
 
@@ -46,7 +46,7 @@ def main(start_input, end_input, location_input):
     api_key = OPENWEATHERMAP_AUTH["api_key"]
 
     logging.info(
-        f"start_input: {start_input}, end_input: {end_input}, location_input: {location_input}"
+        f"start_input: {start_input}, end_input: {end_input}, location_input: {location_input}, api_call_limit: {api_call_limit}"
     )
 
     if start_input == 0:
@@ -195,6 +195,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.start_input, args.end_input, args.location_input)
+    main(args.start_input, args.end_input, args.location_input, args.api_call_limit)
 
     logging.info("Ended successfully")
