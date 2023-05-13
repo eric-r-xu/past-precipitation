@@ -110,7 +110,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                     lat_lon_dict[location_name]["lon"],
                 )
                 # 1 hour increments between ds_start and ds_end
-                for dt in range(dt_start, dt_end, 3600):
+                for dt in range(start_input, end_input, 3600):
                     if api_calls == api_call_limit:
                         logging.error(f"api 3.0 call limit ({api_call_limit}) reached")
                         raise Exception("Stopping script execution")
