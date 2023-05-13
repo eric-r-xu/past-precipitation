@@ -57,6 +57,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                 lat_lon_dict[location_name]["lon"],
             )
             api_link = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}"
+            logging.info(f"calling api via {api_link}")
             r = requests.get(api_link)
             logging.info(f"finished getting {api_link} data")
             requested_dt = int(time.time())
@@ -114,6 +115,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                     if api_calls == api_call_limit:
                         logging.error(f"api 3.0 call limit ({api_call_limit}) reached")
                         raise Exception("Stopping script execution")
+                    logging.info(f"calling api via {api_link}")
                     api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&appid={api_key}"
                     r = requests.get(api_link)
                     logging.info(f"finished getting {api_link} data")
