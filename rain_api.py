@@ -100,6 +100,8 @@ def main(start_input, end_input, location_input):
         logging.info("Finished last hour with API 2.5 for all locations")
 
     elif (start_input > 0) and (end_input > start_input):
+        api_calls = 0
+
         for location_name in [each for each in lat_lon_dict.keys()]:
             if location_name == location_input:
                 logging.info(f"starting api call for {location_input}")
@@ -109,9 +111,13 @@ def main(start_input, end_input, location_input):
                 )
                 # 1 hour increments between ds_start and ds_end
                 for dt in range(dt_start, dt_end, 3600):
+                    if api_calls == api_call_limit:
+                        logging.error(f"api 3.0 call limit ({api_call_limit}) reached")
+                        raise Exception("Stopping script execution")
                     api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&appid={api_key}"
                     r = requests.get(api_link)
                     logging.info(f"finished getting {api_link} data")
+                    api_calls += 1
                     requested_dt = int(time.time())
                     api_result_obj = r.json()
                     rain_1h, rain_3h, dt = 0, 0, api_result_obj["data"][0]["dt"]
@@ -158,7 +164,7 @@ def main(start_input, end_input, location_input):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="backfill parameters for time frame and location"
+        description="optional backfill parameters for time frame and location"
     )
 
     # Optional argument
@@ -178,6 +184,13 @@ if __name__ == "__main__":
         type=str,
         default="None",
         help="location filter (e.g. Bedwell Bayfront Park)",
+    )
+    parser.add_argument(
+        "-a",
+        "--api_call_limit",
+        type=int,
+        default=90,
+        help="api 3.0 api call limit (to prevent charges)",
     )
 
     args = parser.parse_args()
