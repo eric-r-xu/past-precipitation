@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 import warnings
 import pymysql
+from flask_sqlalchemy import SQLAlchemy
 from pytz import timezone
 import pytz
 import time
@@ -43,28 +44,13 @@ app = Flask(__name__)
 
 limiter = Limiter(app, default_limits=["500 per day", "50 per hour"])
 
-app.config["MYSQL_HOST"] = MYSQL_AUTH["host"]
-app.config["MYSQL_USER"] = MYSQL_AUTH["user"]
-app.config["MYSQL_PASSWORD"] = MYSQL_AUTH["password"]
-app.config["MYSQL_DB"] = "rain"
-
-mysql = MySQL(app)
-
-
-# connect to sql
-def getSQLConn(host, user, password):
-    return pymysql.connect(host=host, user=user, passwd=password, autocommit=True)
-
-
-# run query
-def runQuery(mysql_conn, query):
-    with mysql_conn.cursor() as cursor:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            cursor.execute(query)
-
-
-mysql_conn = getSQLConn(MYSQL_AUTH["host"], MYSQL_AUTH["user"], MYSQL_AUTH["password"])
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqldb://%s:%s@%s/%s" % (
+    MYSQL_AUTH["user"],
+    MYSQL_AUTH["password"],
+    MYSQL_AUTH["host"],
+    "rain",
+)
+db = SQLAlchemy(app)
 
 
 @app.route("/rain")
@@ -79,23 +65,25 @@ def rain_gen_html_table():
         lat_lon_dict[i_location_name]["lat"],
         lat_lon_dict[i_location_name]["lon"],
     )
-    df_pre = pd.read_sql_query(
-        f"""
-        SELECT  
-            MIN(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "First API Update Hour (PST)",
-            MAX(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "Last API Update Hour (PST)",
-            MAX(CONVERT_TZ(FROM_UNIXTIME(requested_dt),'UTC','US/Pacific')) AS "Last API Request Time (PST)"
-        FROM 
-            rain.tblFactLatLon 
-        WHERE 
-            location_name = "{i_location_name}" 
-            AND lat = {i_location_lat} 
-            AND lon = {i_location_lon}
-        """,
-        mysql_conn,
-    )
-    df = pd.read_sql_query(
-        f"""
+    try:
+        conn = db.engine.connect()
+        df_pre = pd.read_sql_query(
+            f"""
+            SELECT  
+                MIN(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "First API Update Hour (PST)",
+                MAX(SUBSTR(CONVERT_TZ(FROM_UNIXTIME(dt),'UTC','US/Pacific'),1,13)) AS "Last API Update Hour (PST)",
+                MAX(CONVERT_TZ(FROM_UNIXTIME(requested_dt),'UTC','US/Pacific')) AS "Last API Request Time (PST)"
+            FROM 
+                rain.tblFactLatLon 
+            WHERE 
+                location_name = "{i_location_name}" 
+                AND lat = {i_location_lat} 
+                AND lon = {i_location_lon}
+            """,
+            conn,
+        )
+        df = pd.read_sql_query(
+            f"""
         SELECT  
             location_name AS "Location Name",
             {i_location_lat} AS "Latitude",
@@ -117,8 +105,10 @@ def rain_gen_html_table():
             4 DESC,
             5 DESC
         """,
-        mysql_conn,
-    )
+            conn,
+        )
+    finally:
+        conn.close()
     return render_template(
         "rain_service_result.html",
         tables=[df_pre.to_html(classes="data"), df.to_html(classes="data")],
@@ -130,4 +120,4 @@ def rain_gen_html_table():
 
 # Start the app server on port 1080
 app.debug = True
-app.run(host="0.0.0.0", port=1080, threaded=False)
+app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
