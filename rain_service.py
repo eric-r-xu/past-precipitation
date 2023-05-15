@@ -22,6 +22,7 @@ from flask_mysqldb import MySQL
 from local_settings import *
 import initialize_mysql_rain
 from initialize_mysql_rain import location_names, lat_lon_dict
+from flask_sslify import SSLify
 
 ##########################
 
@@ -42,6 +43,7 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+sslify = SSLify(app)
 
 limiter = Limiter(app, default_limits=["500 per day", "50 per hour"])
 
@@ -121,6 +123,6 @@ def rain_gen_html_table():
 if __name__ == '__main__':
     # Start the app server on port 1080
     app.debug = True
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     context.load_cert_chain('/etc/letsencrypt/live/www.ericrxu.com/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
     app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
