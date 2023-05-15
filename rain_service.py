@@ -43,7 +43,6 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
-sslify = SSLify(app)
 
 limiter = Limiter(app, default_limits=["500 per day", "50 per hour"])
 
@@ -123,6 +122,5 @@ def rain_gen_html_table():
 if __name__ == '__main__':
     # Start the app server on port 1080
     app.debug = True
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    context.load_cert_chain('/etc/letsencrypt/live/www.ericrxu.com/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
+    context.load_cert_chain('/root/past-precipitation/server.crt', '/root/past-precipitation/server.key')
     app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
