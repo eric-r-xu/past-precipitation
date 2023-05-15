@@ -122,5 +122,4 @@ def rain_gen_html_table():
 if __name__ == '__main__':
     # Start the app server on port 1080
     app.debug = True
-    context.load_cert_chain('/root/past-precipitation/server.crt', '/root/past-precipitation/server.key')
-    app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
+    app.run(host="0.0.0.0", port=1080, threaded=False, processes=3, ssl_context = ('/root/past-precipitation/server.crt', '/root/past-precipitation/server.key'))
