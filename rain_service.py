@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 import warnings
 import pymysql
+import ssl
 from flask_sqlalchemy import SQLAlchemy
 from pytz import timezone
 import pytz
@@ -120,4 +121,6 @@ def rain_gen_html_table():
 
 # Start the app server on port 1080
 app.debug = True
+context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+context.load_cert_chain('path/to/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
 app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
