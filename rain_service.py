@@ -123,6 +123,6 @@ def rain_gen_html_table():
 if __name__ == '__main__':
     # Start the app server on port 1080
     app.debug = True
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.load_cert_chain('/etc/letsencrypt/live/www.ericrxu.com/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
     app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
