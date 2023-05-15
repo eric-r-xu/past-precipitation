@@ -35,7 +35,7 @@ tz = timezone("US/Pacific")
 logging.Formatter.converter = timetz
 
 logging.basicConfig(
-    filename="/logs/rain_service.log",
+    filename="/logs/rain_service_https.log",
     format="%(asctime)s %(levelname)s: %(message)s",
     level=logging.INFO,
     datefmt=f"%Y-%m-%d %H:%M:%S ({tz})",
@@ -118,9 +118,9 @@ def rain_gen_html_table():
 
 
 # --------- RUN WEB APP SERVER ------------#
-
-# Start the app server on port 1080
-app.debug = True
-context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-context.load_cert_chain('path/to/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
-app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
+if __name__ == '__main__':
+    # Start the app server on port 1080
+    app.debug = True
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context.load_cert_chain('/etc/letsencrypt/live/www.ericrxu.com/fullchain.pem', '/etc/letsencrypt/live/www.ericrxu.com/privkey.pem')
+    app.run(host="0.0.0.0", port=1080, threaded=False, processes=3)
