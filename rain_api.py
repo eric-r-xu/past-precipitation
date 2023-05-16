@@ -10,7 +10,22 @@ import pytz
 import warnings
 import argparse
 import initialize_mysql_rain
+import email_service
 
+app = Flask(__name__)
+app.config.update(
+    dict(
+        DEBUG=True,
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USE_SSL=False,
+        MAIL_USERNAME=GMAIL_AUTH["mail_username"],
+        MAIL_PASSWORD=GMAIL_AUTH["mail_password"],
+    )
+)
+
+email_service = Mail(app)
 
 def main(start_input, end_input, location_input, api_call_limit):
     def timetz(*args):
@@ -71,7 +86,23 @@ def main(start_input, end_input, location_input, api_call_limit):
                 rain_3h = api_result_obj["rain"]["3h"]
             except:
                 pass
-
+            ## email `eric.r.xu@gmail.com` if it's raining in Bedwell Bayfront Park
+            if location_name == 'Bedwell Bayfront Park' and (rain1h > 0 OR rain_3h > 0 ):
+                subject_value = "Past Precipitation - Rain in Bedwell Bayfront Park"
+                with email_service.connect() as conn:
+                    gif_link = "https://media.giphy.com/media/t7Qb8655Z1VfBGr5XB/giphy.gif"
+                    msg = Message(
+                        subject_value,
+                        recipients=['eric.r.xu@gmail.com],
+                        sender=GMAIL_AUTH["mail_username"],
+                    )
+                    msg.html = """ <br><br><img src="%s" \
+                    width="640" height="480"> """ % (
+                        gif_link,
+                    )
+                    conn.send(msg)
+                    
+                
             query = (
                 "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
                 % (
@@ -160,7 +191,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                         )
                     )
 
-        logging.info("Finished backfill with API 3.0 for {location_input}")
+        logging.info(f"Finished backfill with API 3.0 for {location_input}")
     else:
         logging.error("Improper arguments")
 
