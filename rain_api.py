@@ -27,6 +27,7 @@ app.config.update(
 
 email_service = Mail(app)
 
+
 def main(start_input, end_input, location_input, api_call_limit):
     def timetz(*args):
         return datetime.datetime.now(tz).timetuple()
@@ -86,14 +87,18 @@ def main(start_input, end_input, location_input, api_call_limit):
                 rain_3h = api_result_obj["rain"]["3h"]
             except:
                 pass
-            ## recipient `eric.r.xu@gmail.com` if it's raining in Bedwell Bayfront Park
-            if location_name == 'Bedwell Bayfront Park' and (rain1h > 0 OR rain_3h > 0 ):
+
+            if (location_name == "Bedwell Bayfront Park") and (
+                rain_1h > 0 or rain_3h > 0
+            ):
                 subject_value = "Past Precipitation - Rain in Bedwell Bayfront Park"
                 with email_service.connect() as conn:
-                    gif_link = "https://media.giphy.com/media/t7Qb8655Z1VfBGr5XB/giphy.gif"
+                    gif_link = (
+                        "https://media.giphy.com/media/t7Qb8655Z1VfBGr5XB/giphy.gif"
+                    )
                     msg = Message(
                         subject_value,
-                        recipients=['eric.r.xu@gmail.com],
+                        recipients=["eric.r.xu@gmail.com"],
                         sender=GMAIL_AUTH["mail_username"],
                     )
                     msg.html = """ <br><br><img src="%s" \
@@ -101,8 +106,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                         gif_link,
                     )
                     conn.send(msg)
-                    
-                
+
             query = (
                 "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
                 % (
@@ -146,7 +150,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                     if api_calls == api_call_limit:
                         logging.error(f"api 3.0 call limit ({api_call_limit}) reached")
                         raise Exception("Stopping script execution")
-                    
+
                     api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={dt}&appid={api_key}"
                     logging.info(f"calling api via {api_link}")
                     r = requests.get(api_link)
