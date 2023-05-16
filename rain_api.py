@@ -3,6 +3,7 @@ import logging
 import requests
 import time
 from flask import Flask
+from flask_mail import Mail, Message
 from local_settings import *
 import datetime
 import gc
