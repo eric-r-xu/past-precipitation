@@ -86,7 +86,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                 rain_3h = api_result_obj["rain"]["3h"]
             except:
                 pass
-            ## email `eric.r.xu@gmail.com` if it's raining in Bedwell Bayfront Park
+            ## recipient `eric.r.xu@gmail.com` if it's raining in Bedwell Bayfront Park
             if location_name == 'Bedwell Bayfront Park' and (rain1h > 0 OR rain_3h > 0 ):
                 subject_value = "Past Precipitation - Rain in Bedwell Bayfront Park"
                 with email_service.connect() as conn:
