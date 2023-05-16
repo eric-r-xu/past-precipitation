@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 import requests
 import time
+from flask import Flask
 from local_settings import *
 import datetime
 import gc
