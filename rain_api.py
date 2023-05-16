@@ -10,7 +10,6 @@ import pytz
 import warnings
 import argparse
 import initialize_mysql_rain
-import email_service
 
 app = Flask(__name__)
 app.config.update(
