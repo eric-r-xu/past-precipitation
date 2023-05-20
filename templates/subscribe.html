@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Weather Powered Email</title>
+<style>
+body {
+  font-family: Verdana,Arial,sans-serif;
+  width: 1800px;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 2px;
+}
+h1 {
+  font-size: 1.2em;
+}
+h2 {
+  font-size: 0.2em;
+}
+.block {
+  display: block;
+  width: 7%;
+  border: 0.4px solid black;
+  background-color: #4CAF50;
+  padding: 7px 14px;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<img src="/static/klaviyo_logo.svg" alt="Klaviyo Logo"> 
+<h1>WEATHER POWERED EMAIL</h1>
+<hr>
+<h2>
+email subscriptions will expire automatically within 10 days
+<br>
+weather powered emails are scheduled at ~ 9 am local time (not all cities supported)
+<br>
+please check spam folder and ensure emails from "eric.r.xu@gmail.com" make it to your inbox
+</h2>
+<form action="./klaviyo_weather_app" method="POST">
+Email Address: <br>
+<textarea rows="1" cols="35" name="i_email"></textarea>
+<br><br>
+Location: <br>
+<input list="cities" placeholder="Where do you live? Choose from list." name="i_city" style="width: 300px;">
+<datalist id="cities">
+{% for cityName in cityNameSet %}
+<option value="{{cityName}}" >
+{% endfor %}
+</datalist>
+<br><br><br><br>
+<hr>
+<button type="submit" class="block" name="i_button">SUBSCRIBE</button>
+</form>
+</body>
+</html>
