@@ -66,7 +66,7 @@ def main(start_input, end_input, location_input, api_call_limit):
         f"start_input: {start_input}, end_input: {end_input}, location_input: {location_input}, api_call_limit: {api_call_limit}"
     )
 
-    if start_input == 0:
+    if start_input == 0 and location_input != 'Bedwell Bayfront Park':
         for location_name in [each for each in lat_lon_dict.keys()]:
             logging.info(f"starting api call for {location_name}")
             lat, lon = (
