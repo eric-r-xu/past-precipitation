@@ -28,6 +28,11 @@ app.config.update(
 
 email_service = Mail(app)
 
+# inclusion list for
+# weather 3.0 t-4 hours past precipitation confirmation
+# email alerts
+INCLUSION_LOCATIONS = ['Bedwell Bayfront Park']
+
 
 def main(start_input, end_input, location_input, api_call_limit):
     def timetz(*args):
@@ -66,7 +71,7 @@ def main(start_input, end_input, location_input, api_call_limit):
         f"start_input: {start_input}, end_input: {end_input}, location_input: {location_input}, api_call_limit: {api_call_limit}"
     )
 
-    if start_input == 0 and location_input != 'Bedwell Bayfront Park':
+    if start_input == 0:
         for location_name in [each for each in lat_lon_dict.keys()]:
             logging.info(f"starting api call for {location_name}")
             lat, lon = (
@@ -90,24 +95,69 @@ def main(start_input, end_input, location_input, api_call_limit):
             except:
                 pass
 
-            if (location_name == "Bedwell Bayfront Park") and (
-                rain_1h > 0 or rain_3h > 0
-            ):
-                subject_value = "Past Precipitation - Rain in Bedwell Bayfront Park"
-                with email_service.connect() as conn:
-                    gif_link = (
-                        "https://media.giphy.com/media/t7Qb8655Z1VfBGr5XB/giphy.gif"
+            
+            if location_name in INCLUSION_LOCATIONS:
+                logging.info(f'running api 3.0 for {location_name}')
+                api_link = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={(requested_dt-14400)}&appid={api_key}"
+                logging.info(f"calling api via {api_link}")
+                r = requests.get(api_link)
+                logging.info(f"finished getting {api_link} data")
+                requested_dt = int(time.time())
+                api_result_obj = r.json()
+                rain_1h, rain_3h, dt = 0, 0, api_result_obj["data"][0]["dt"]
+                try:
+                    rain_1h = api_result_obj["data"][0]["rain"]["1h"]
+                except:
+                    pass
+                try:
+                    rain_3h = api_result_obj["data"][0]["rain"]["3h"]
+                except:
+                    pass
+
+                query = (
+                    "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
+                    % (
+                        dt,
+                        requested_dt,
+                        location_name,
+                        lat,
+                        lon,
+                        rain_1h,
+                        rain_3h,
                     )
-                    msg = Message(
-                        subject_value,
-                        recipients=["eric.r.xu@gmail.com"],
-                        sender=GMAIL_AUTH["mail_username"],
+                )
+                logging.info("query=%s" % (query))
+                runQuery(mysql_conn, query)
+                logging.info(
+                    "%s - %s - %s - %s - %s - %s - %s"
+                    % (
+                        dt,
+                        requested_dt,
+                        location_name,
+                        lat,
+                        lon,
+                        rain_1h,
+                        rain_3h,
                     )
-                    msg.html = """ <br><br><img src="%s" \
-                    width="640" height="480"> """ % (
-                        gif_link,
-                    )
-                    conn.send(msg)
+                )
+
+                if rain_1h > 0 or rain_3h > 0:
+                    subject_value = f"Past Precipitation - Rain in {location_name} detected!"
+                    with email_service.connect() as conn:
+                        gif_link = (
+                            "https://media.giphy.com/media/t7Qb8655Z1VfBGr5XB/giphy.gif"
+                        )
+                        msg = Message(
+                            subject_value,
+                            recipients=["eric.r.xu@gmail.com"],
+                            sender=GMAIL_AUTH["mail_username"],
+                        )
+                        msg.html = """ <br><br><img src="%s" \
+                        width="640" height="480"> """ % (
+                            gif_link,
+                        )
+                        conn.send(msg)
+                logging.info(f'finished api 3.0 for {location_name}')
 
             query = (
                 "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
@@ -137,7 +187,7 @@ def main(start_input, end_input, location_input, api_call_limit):
             )
         logging.info("Finished last hour with API 2.5 for all locations")
 
-    elif (start_input > 0 or location_input == 'Bedwell Bayfront Park') and (end_input > start_input):
+    elif (start_input > 0) and (end_input > start_input):
         if location_input == 'Bedwell Bayfront Parkstart_input':
             start_input = end_input - 86400
         api_calls = 0
