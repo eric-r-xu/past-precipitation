@@ -115,7 +115,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                     pass
 
                 query = (
-                    "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
+                    "INSERT IGNORE INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
                     % (
                         dt,
                         requested_dt,
@@ -160,7 +160,7 @@ def main(start_input, end_input, location_input, api_call_limit):
                 logging.info(f'finished api 3.0 for {location_name}')
 
             query = (
-                "INSERT INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
+                "INSERT IGNORE INTO rain.tblFactLatLon(dt, requested_dt, location_name, lat, lon, rain_1h, rain_3h) VALUES (%i, %i, '%s', %.3f, %.3f, %.1f, %.1f)"
                 % (
                     dt,
                     requested_dt,
