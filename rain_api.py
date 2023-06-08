@@ -137,7 +137,9 @@ def main(start_input, end_input, location_input, api_call_limit):
             )
         logging.info("Finished last hour with API 2.5 for all locations")
 
-    elif (start_input > 0) and (end_input > start_input):
+    elif (start_input > 0 or location_input == 'Bedwell Bayfront Park') and (end_input > start_input):
+        if location_input == 'Bedwell Bayfront Parkstart_input':
+            start_input = end_input - 86400
         api_calls = 0
 
         for location_name in [each for each in lat_lon_dict.keys()]:
@@ -207,7 +209,6 @@ if __name__ == "__main__":
         description="optional backfill parameters for time frame and location"
     )
 
-    # Optional argument
     parser.add_argument(
         "-s", "--start_input", type=int, default=0, help="dt_start (e.g. 1683853988)"
     )
