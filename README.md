@@ -1,8 +1,23 @@
-# past-precipitation
+# past-precipitation 🌧️🌧️🌧️🌧️🌧️
 
-[link](http://ericrxu.com:1080/rain)
+[UI](https://app.ericrxu.com/rain)
 
-- - - - 
+
+**Past Precipitation** is a pet project designed to help users find historical rainfall data for populous cities, with a particular focus on California. 🌧️ Finding free and reliable historical precipitation data can be challenging, and this tool aims to fill that gap.
+
+## Origin
+The project began out of a personal need to determine when Bedwell Bayfront Park would be muddy after rainfall. With my notoriously poor memory and a surprising realization of how much rain the bay area receives (I moved here in 2020), I wanted to avoid getting my running shoes stuck in the mud during my jobs at the park.
+
+## Features
+- **Historical Rainfall Data**: Access historical precipitation data (historical data starting from April 30, 2023)
+- **User-Friendly Web Form**: Input your location to get detailed historical rainfall statistics.
+- **Technology Stack**: Hosted on DigitalOcean cloud VCPU servers using Flask and MySQL.
+
+
+---
+
+
+## Installation
 
 Upgrade Ubuntu and packages
 
