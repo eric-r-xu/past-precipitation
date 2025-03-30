@@ -48,3 +48,8 @@ Schedule cron for scripted api call to get latest precipitation data (
     add following row entry to schedule runs every 30 minutes (logs in /logs/rain_api.log including standard error)
     
     0,30 * * * * /$(whoami)/past-precipitation/env/bin/python /$(whoami)/past-precipitation/rain_api.py 2>&1
+
+
+Example Data Backfill Command for Past Precipitation Data for Bedwell Bayfront Park for between 1742281200 and 1742367600
+
+     /$(whoami)/myproject/myprojectenv/bin/python /$(whoami)/past-precipitation/rain_api.py -s 1742281200 -l "Bedwell Bayfront Park" -e 1742367600
